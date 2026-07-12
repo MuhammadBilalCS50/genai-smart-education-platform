@@ -12,8 +12,6 @@ button.secondary:hover { background: #d1d5db; }
 textarea { width: 100%; min-height: 82px; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; resize: vertical; }
 input[type="number"] { width: 70px; margin-left: 8px; padding: 6px; }
 pre { white-space: pre-wrap; background: #f3f4f6; padding: 12px; border-radius: 8px; overflow-x: auto; }
-.download { display: inline-block; margin-left: 8px; font-weight: bold; color: #2563eb; }
-
 .chat-section { padding: 0; overflow: hidden; }
 .chat-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding: 20px; border-bottom: 1px solid #e5e7eb; }
 .session { color: #64748b; font-size: 13px; }

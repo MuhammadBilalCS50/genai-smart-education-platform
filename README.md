@@ -1,14 +1,14 @@
-# PDF RAG + RAGAS Evaluation App
+# PDF RAG App with Standalone RAGAS Evaluation
 
-This project creates a complete Retrieval-Augmented Generation pipeline:
+This project provides a Retrieval-Augmented Generation application and a separate evaluation notebook:
 
 1. Upload a PDF.
 2. Parse PDFs into structured documents and Markdown using Docling.
 3. Create token-aware semantic chunks using Docling's `HybridChunker`.
 4. Store chunk embeddings and metadata in persistent Chroma.
 5. Ask questions from the indexed PDF.
-6. Upload an Excel evaluation dataset containing questions and reference answers.
-7. Generate RAG answers, retrieve top-k chunks, run RAGAS metrics, and export results to Excel.
+6. Run `ragas_evaluation.ipynb` separately with an Excel evaluation dataset.
+7. Generate RAG answers, retrieve top-k chunks, run RAGAS metrics, and export results to a static output path.
 
 RAGAS metrics included:
 
@@ -23,7 +23,7 @@ to limit peak memory usage. Heading hierarchy inference uses PDF bookmarks and
 numbering without retaining parsed pages for style analysis. Every embedded chunk
 is prefixed with its complete section path to improve retrieval of nested examples.
 
-The output Excel contains:
+The notebook's output Excel contains:
 
 - question
 - reference answer
@@ -84,7 +84,7 @@ OPENAI_CHAT_MODEL=gpt-4o-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 LANGSMITH_TRACING=true
 LANGSMITH_API_KEY=your_langsmith_api_key_here
-LANGSMITH_PROJECT=rag-ragas-app
+LANGSMITH_PROJECT=pdf-rag-app
 CHROMA_DIR=./storage/chroma
 UPLOAD_DIR=./storage/uploads
 RESULTS_DIR=./storage/results
@@ -118,7 +118,20 @@ Frontend will usually run at:
 http://localhost:5173
 ```
 
-## Excel Evaluation Dataset Format
+## Standalone RAGAS Evaluation Notebook
+
+RAGAS evaluation is intentionally not exposed by the backend API or frontend. First ingest the PDF whose Chroma index should be evaluated, then open `ragas_evaluation.ipynb` from the project root.
+
+Update these static values in the notebook before running all cells:
+
+```python
+INPUT_DATASET_PATH = Path(r"D:\\path\\to\\evaluation_dataset.xlsx")
+OUTPUT_METRICS_PATH = Path(r"D:\\path\\to\\ragas_metrics.xlsx")
+```
+
+The notebook loads the existing Chroma collection and OpenAI configuration through the backend modules, so the FastAPI server does not need to be running.
+
+### Excel Evaluation Dataset Format
 
 Your Excel file must contain a question column and a reference answer column.
 
@@ -174,26 +187,9 @@ JSON body:
 }
 ```
 
-### 3. Run RAGAS Evaluation
-
-```http
-POST /evaluate
-```
-
-Form data:
-
-- `file`: Excel file
-- `top_k`: optional, default 4
-
-### 4. Download Result Excel
-
-```http
-GET /download/{filename}
-```
-
 ## Notes
 
 - Docling hybrid chunk vectors and metadata are stored persistently under `storage/chroma`.
-- Evaluation can take time because RAGAS uses LLM calls for metric scoring.
-- For best results, ingest the PDF before running evaluation.
+- Notebook evaluation can take time because RAGAS uses LLM calls for metric scoring.
+- Ingest the PDF before running the standalone evaluation notebook.
 - The system uses OpenAI both for embeddings and answer generation.

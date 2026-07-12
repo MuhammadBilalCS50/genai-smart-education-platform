@@ -10,12 +10,10 @@ function makeSessionId() {
 
 export default function App() {
   const [pdf, setPdf] = useState(null);
-  const [excel, setExcel] = useState(null);
   const [question, setQuestion] = useState('');
   const [topK, setTopK] = useState(4);
   const [log, setLog] = useState('');
   const [messages, setMessages] = useState([]);
-  const [download, setDownload] = useState(null);
   const [asking, setAsking] = useState(false);
   const sessionId = useMemo(makeSessionId, []);
 
@@ -69,17 +67,6 @@ export default function App() {
     append('Conversation cleared.');
   }
 
-  async function evaluate() {
-    if (!excel) return alert('Select an Excel evaluation file first');
-    const form = new FormData();
-    form.append('file', excel);
-    form.append('top_k', topK);
-    append('Running RAGAS evaluation...');
-    const res = await axios.post(`${API}/evaluate`, form);
-    setDownload(`${API}${res.data.download_url}`);
-    append(JSON.stringify(res.data, null, 2));
-  }
-
   function onQuestionKeyDown(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -89,8 +76,8 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>PDF RAG + RAGAS Evaluation</h1>
-      <p>Upload a PDF, index it in Chroma, chat with the document, then evaluate using an Excel file with questions and reference answers.</p>
+      <h1>PDF RAG Assistant</h1>
+      <p>Upload a PDF, index it in Chroma, and chat with the document.</p>
 
       <section>
         <h2>1. Ingest PDF</h2>
@@ -146,14 +133,6 @@ export default function App() {
             <button className="secondary" onClick={clearConversation} disabled={asking || messages.length === 0}>New Chat</button>
           </div>
         </div>
-      </section>
-
-      <section>
-        <h2>3. Run RAGAS Evaluation</h2>
-        <p>Excel columns: <b>question</b> and one of <b>reference_answer</b>, <b>reference</b>, <b>ground_truth</b>, or <b>answer</b>.</p>
-        <input type="file" accept=".xlsx,.xls" onChange={e => setExcel(e.target.files[0])} />
-        <button onClick={evaluate}>Run Evaluation</button>
-        {download && <a className="download" href={download}>Download Evaluation Excel</a>}
       </section>
 
       <section>
