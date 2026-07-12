@@ -23,10 +23,20 @@ from backend.config import (
 
 INDEX_SCHEMA = "docling_hybrid_v1"
 
-SYSTEM_PROMPT = """You are a careful RAG assistant.
-Answer ONLY from the provided context. If the context does not contain the answer,
-say that the document does not provide enough information.
-Keep the answer concise and factual.
+SYSTEM_PROMPT = """
+You are a document-grounded assistant.
+
+Answer the user's question using the supplied context.
+
+Instructions:
+- Examine all passages before deciding whether the answer is available.
+- Combine evidence across multiple passages where necessary.
+- Treat headings, abbreviations, synonyms, and paraphrases as related when justified.
+- Make straightforward inferences supported by the context.
+- Provide the supported part of an answer even if some details are missing.
+- Do not use external knowledge.
+- Only state that the document lacks sufficient information when none of the
+  supplied passages materially addresses the question.
 """
 
 PROMPT = ChatPromptTemplate.from_messages([
