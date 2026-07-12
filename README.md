@@ -103,6 +103,22 @@ Backend will run at:
 http://localhost:8000
 ```
 
+### Standalone ingestion and chat
+
+The backend server is not required to run either workflow. From the project root, ingest a PDF with:
+
+```bash
+python -m backend.module_1.ingest "path/to/document.pdf"
+```
+
+After ingestion, ask a question against the configured Chroma collection with:
+
+```bash
+python -m backend.module_1.chat "What is this document about?" --top-k 4 --no-memory
+```
+
+Omit `--no-memory` to use the standalone process's in-memory chat session. Both commands use the paths, collection, models, and environment variables defined by `backend.config`.
+
 ## Frontend Setup
 
 At project root/frontend:

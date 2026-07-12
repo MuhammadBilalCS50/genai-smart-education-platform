@@ -5,7 +5,8 @@ import traceback
 from fastapi.responses import JSONResponse
 
 from backend.config import UPLOAD_DIR
-from backend.rag_pipeline import ask_question, clear_chat_history, ingest_pdf
+from backend.module_1.chat import ask_question, clear_chat_history
+from backend.module_1.ingest import ingest_pdf
 
 app = FastAPI(title="PDF RAG API")
 
@@ -50,7 +51,7 @@ async def ingest_pdf_endpoint(
                 "error_type": type(exc).__name__,
                 "traceback": error_details,
             },
-    )
+        )
 
 
 @app.post("/ask")
