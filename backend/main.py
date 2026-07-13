@@ -5,7 +5,7 @@ import traceback
 from fastapi.responses import JSONResponse
 
 from backend.config import UPLOAD_DIR
-from backend.module_1.chat import ask_question, clear_chat_history
+from backend.module_1.chat import clear_chat_history, run_chat_workflow
 from backend.module_1.ingest import ingest_pdf
 
 app = FastAPI(title="PDF RAG API")
@@ -57,7 +57,7 @@ async def ingest_pdf_endpoint(
 @app.post("/ask")
 def ask_endpoint(payload: AskRequest):
     try:
-        return ask_question(payload.question, top_k=payload.top_k, session_id=payload.session_id)
+        return run_chat_workflow(payload.question, top_k=payload.top_k, session_id=payload.session_id)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 

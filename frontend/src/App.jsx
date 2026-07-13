@@ -46,6 +46,8 @@ export default function App() {
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: res.data.answer,
+        queryType: res.data.query_type,
+        references: res.data.references || [],
         contexts: res.data.contexts || [],
         piiRedactionLog: res.data.pii_redaction_log || [],
         answerPiiRedactionLog: res.data.answer_pii_redaction_log || [],
@@ -102,12 +104,25 @@ export default function App() {
             <article key={index} className={`message ${message.role}`}>
               <div className="bubble">
                 <div className="role">{message.role === 'user' ? 'You' : 'Assistant'}</div>
+                {message.queryType && <div className="query-type">Route: {message.queryType}</div>}
                 <p>{message.content}</p>
                 {message.piiRedactionLog?.length > 0 && (
                   <div className="meta">{message.piiRedactionLog.join('; ')}</div>
                 )}
                 {message.answerPiiRedactionLog?.length > 0 && (
                   <div className="meta">{message.answerPiiRedactionLog.join('; ')}</div>
+                )}
+                {message.references?.length > 0 && (
+                  <div className="references">
+                    <strong>Relevant concepts in the document</strong>
+                    <ul>
+                      {message.references.map((reference, referenceIndex) => (
+                        <li key={`${reference.heading}-${reference.pages}-${referenceIndex}`}>
+                          {reference.heading} — {reference.pages === 'Page unavailable' ? reference.pages : `Page(s): ${reference.pages}`}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
                 {message.contexts?.length > 0 && (
                   <details>
