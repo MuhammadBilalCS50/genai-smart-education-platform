@@ -9,6 +9,7 @@ function makeSessionId() {
 }
 
 export default function App() {
+  const [activeView, setActiveView] = useState('landing');
   const [pdf, setPdf] = useState(null);
   const [question, setQuestion] = useState('');
   const [topK, setTopK] = useState(4);
@@ -76,10 +77,42 @@ export default function App() {
     }
   }
 
+  if (activeView === 'landing') {
+    return (
+      <main className="landing-page">
+        <div className="landing-content">
+          <span className="landing-eyebrow">Smart Education Platform</span>
+          <h1>Choose your learning assistant</h1>
+          <p>Select a workspace to get started.</p>
+
+          <button
+            className="assistant-card"
+            type="button"
+            onClick={() => setActiveView('student-rag')}
+          >
+            <span className="assistant-card-icon" aria-hidden="true">S</span>
+            <span className="assistant-card-copy">
+              <strong>Student RAG Assistant</strong>
+              <span>Upload study material and ask grounded questions about it.</span>
+            </span>
+            <span className="assistant-card-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <div className="container">
-      <h1>PDF RAG Assistant</h1>
-      <p>Upload a PDF, index it in Chroma, and chat with the document.</p>
+      <header className="assistant-page-header">
+        <div>
+          <h1>Student RAG Assistant</h1>
+          <p>Upload a PDF, index it in Chroma, and chat with the document.</p>
+        </div>
+        <button className="secondary back-button" type="button" onClick={() => setActiveView('landing')}>
+          Back to home
+        </button>
+      </header>
 
       <section>
         <h2>1. Ingest PDF</h2>
