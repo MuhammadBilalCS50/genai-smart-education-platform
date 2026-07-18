@@ -7,8 +7,9 @@ This project provides a Retrieval-Augmented Generation application and a separat
 3. Create token-aware semantic chunks using Docling's `HybridChunker`.
 4. Store chunk embeddings and metadata in persistent Chroma.
 5. Ask questions from the indexed PDF.
-6. Run `ragas_evaluation.ipynb` separately with an Excel evaluation dataset.
-7. Generate RAG answers, retrieve top-k chunks, run RAGAS metrics, and export results to a static output path.
+6. Generate section-based short-question quizzes and downloadable question/answer PDFs.
+7. Run `ragas_evaluation.ipynb` separately with an Excel evaluation dataset.
+8. Generate RAG answers, retrieve top-k chunks, run RAGAS metrics, and export results to a static output path.
 
 RAGAS metrics included:
 
@@ -202,6 +203,20 @@ JSON body:
   "top_k": 4
 }
 ```
+
+### 3. AI Quiz Generator
+
+The quiz UI drives a resumable LangGraph workflow through these endpoints:
+
+- `GET /quiz/books` lists ingested Markdown books without their UUID prefixes.
+- `POST /quiz/contents` extracts chapter ranges from a selected book's contents.
+- `POST /quiz/calibrate` saves the difference between printed and actual PDF pages.
+- `POST /quiz/generate` selects matching Chroma chunks, generates short questions,
+  answers them through the existing chat workflow, and returns two PDF links.
+- `GET /quiz/{quiz_id}/pdf?version=questions|answers` downloads either paper.
+
+Generated quiz sessions and PDFs are held in backend memory and expire when the
+server restarts. The source Markdown and Chroma index remain persistent.
 
 ## Notes
 

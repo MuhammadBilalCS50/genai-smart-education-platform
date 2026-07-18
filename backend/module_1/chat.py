@@ -138,6 +138,7 @@ class ChatWorkflowState(TypedDict, total=False):
     top_k: int
     session_id: str
     use_memory: bool
+    source_id: str | None
     query_type: QueryType
     documents: List[Document]
     result: Dict[str, Any]
@@ -169,6 +170,18 @@ def _vectorstore() -> Chroma:
         embedding_function=_embeddings(),
         persist_directory=str(CHROMA_DIR),
     )
+
+
+def _retrieval_filter(source_id: str | None = None) -> Dict[str, Any]:
+    """Build a Chroma filter, optionally restricting retrieval to one ingested book."""
+    if source_id:
+        return {
+            "$and": [
+                {"index_schema": INDEX_SCHEMA},
+                {"source_id": source_id},
+            ],
+        }
+    return {"index_schema": INDEX_SCHEMA}
 
 
 @lru_cache(maxsize=8)
@@ -229,6 +242,7 @@ def ask_question(
     top_k: int = 4,
     session_id: str = "default",
     use_memory: bool = True,
+    source_id: str | None = None,
 ) -> Dict[str, Any]:
     """Retrieve top-k chunks and generate a grounded answer."""
     if top_k < 1:
@@ -242,7 +256,7 @@ def ask_question(
     candidates = _vectorstore().similarity_search(
         retrieval_query,
         k=max(top_k * 4, 10),
-        filter={"index_schema": INDEX_SCHEMA},
+        filter=_retrieval_filter(source_id),
     )
     docs = _rerank_documents(candidates, retrieval_query, top_k=top_k)
     contexts = [doc.page_content for doc in docs]
@@ -296,6 +310,7 @@ def _answer_theoretical(state: ChatWorkflowState) -> Dict[str, Any]:
         top_k=state["top_k"],
         session_id=state["session_id"],
         use_memory=state["use_memory"],
+        source_id=state.get("source_id"),
     )
     result.update({"query_type": "theoretical", "references": []})
     return {"result": result}
@@ -305,7 +320,7 @@ def _retrieve_specialized_context(state: ChatWorkflowState) -> Dict[str, Any]:
     documents = _vectorstore().similarity_search(
         state["redacted_question"],
         k=state["top_k"],
-        filter={"index_schema": INDEX_SCHEMA},
+        filter=_retrieval_filter(state.get("source_id")),
     )
     return {"documents": documents}
 
@@ -399,6 +414,7 @@ def run_chat_workflow(
     top_k: int = 4,
     session_id: str = "default",
     use_memory: bool = True,
+    source_id: str | None = None,
 ) -> Dict[str, Any]:
     """Classify a query and run its theoretical, numerical, or programming path."""
     if not question.strip():
@@ -411,6 +427,7 @@ def run_chat_workflow(
         "top_k": top_k,
         "session_id": session_id,
         "use_memory": use_memory,
+        "source_id": source_id,
     })
     return final_state["result"]
 
