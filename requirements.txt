@@ -10,6 +10,7 @@ chromadb>=0.5.23
 langchain>=0.3.13
 langchain-community>=0.4.0
 langchain-openai>=0.3.0
+openai>=2.35.1
 langchain-chroma>=0.2.0
 langgraph>=0.2.60
 langsmith>=0.2.0

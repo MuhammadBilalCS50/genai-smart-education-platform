@@ -54,6 +54,7 @@ class SlidesGenerationRequest(BaseModel):
     slide_count: int = 10
     audience: str = "Students"
     instructions: str = ""
+    generate_images: bool = False
 
 
 class SlidesFeedbackRequest(BaseModel):

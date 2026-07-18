@@ -239,6 +239,7 @@ function SlidesGenerator({ onBack }) {
   const [slideCount, setSlideCount] = useState(10);
   const [audience, setAudience] = useState('Students');
   const [instructions, setInstructions] = useState('');
+  const [generateImages, setGenerateImages] = useState(false);
   const [draft, setDraft] = useState(null);
   const [feedback, setFeedback] = useState('');
   const [presentation, setPresentation] = useState(null);
@@ -287,12 +288,15 @@ function SlidesGenerator({ onBack }) {
 
   async function generateDraft() {
     if (selectedSections.length === 0) return setError('Select at least one section.');
-    setBusy('Retrieving book content and designing your slide draft...'); setError('');
+    setBusy(generateImages
+      ? 'Designing slides and generating optional images. This can take several minutes...'
+      : 'Retrieving book content and designing your slide draft...');
+    setError('');
     try {
       const { data } = await axios.post(`${API}/slides/generate`, {
         calibration_id: calibration.calibration_id,
         selected_section_ids: selectedSections,
-        slide_count: Number(slideCount), audience, instructions,
+        slide_count: Number(slideCount), audience, instructions, generate_images: generateImages,
       });
       setDraft(data); setFeedback(''); setPresentation(null);
     } catch (err) { setError(err.response?.data?.detail || err.message); }
@@ -301,7 +305,10 @@ function SlidesGenerator({ onBack }) {
 
   async function reviseDraft() {
     if (!feedback.trim()) return setError('Describe what you want changed.');
-    setBusy('Incorporating your feedback...'); setError('');
+    setBusy(draft.generate_images
+      ? 'Revising slides and updating changed images...'
+      : 'Incorporating your feedback...');
+    setError('');
     try {
       const { data } = await axios.post(`${API}/slides/${draft.draft_id}/feedback`, { feedback });
       setDraft(data); setFeedback(''); setPresentation(null);
@@ -343,17 +350,22 @@ function SlidesGenerator({ onBack }) {
           <label className="field">Slides<input type="number" min="3" max="30" value={slideCount} onChange={e => setSlideCount(e.target.value)} /></label>
           <label className="field">Audience<input type="text" value={audience} onChange={e => setAudience(e.target.value)} placeholder="For example: Grade 10 students" /></label>
           <label className="field wide">Learning goal and instructions<textarea value={instructions} onChange={e => setInstructions(e.target.value)} placeholder="For example: Explain the core concepts with examples and finish with a recap." /></label>
+          <label className="image-generation-option wide">
+            <input type="checkbox" checked={generateImages} onChange={e => { setGenerateImages(e.target.checked); setDraft(null); setPresentation(null); }} />
+            <span><strong>Generate slide images with GPT Image 2</strong><small>Optional and billed separately. Uses low-quality landscape images to minimize cost; one image is generated for every slide.</small></span>
+          </label>
         </div>
         <button onClick={generateDraft} disabled={Boolean(busy) || selectedSections.length === 0}>Generate slide draft</button>
       </section>}
 
       {draft && <section className="slides-result">
-        <div className="step-heading slides-step"><span>4</span><div><h2>Review the draft</h2><p>{draft.slides.length} slides · Revision {draft.revision} · Theme: {draft.theme_recommendation}</p></div></div>
+        <div className="step-heading slides-step"><span>4</span><div><h2>Review the draft</h2><p>{draft.slides.length} slides · Revision {draft.revision}{draft.generate_images ? ` · ${draft.images_generated}/${draft.slides.length} images generated` : ''} · Theme: {draft.theme_recommendation}</p></div></div>
+        {draft.image_generation_failures > 0 && <div className="alert image-warning">{draft.image_generation_failures} image{draft.image_generation_failures === 1 ? '' : 's'} could not be generated. Those slides will use their visual recommendation panel instead.</div>}
         <div className="slide-preview-grid">{draft.slides.map((slide, index) => <article className="slide-preview" key={`${draft.revision}-${index}`}>
           <div className="slide-preview-top"><span>{index + 1}</span><small>{slide.layout_recommendation.replace('_', ' ')}</small></div>
           <h3>{slide.title}</h3>{slide.subtitle && <p className="slide-subtitle">{slide.subtitle}</p>}
           {slide.bullets?.length > 0 && <ul>{slide.bullets.map((bullet, itemIndex) => <li key={itemIndex}>{bullet}</li>)}</ul>}
-          {slide.picture_recommendation && <div className="visual-recommendation"><strong>Picture / diagram</strong><span>{slide.picture_recommendation}</span></div>}
+          {slide.picture_recommendation && <div className="visual-recommendation"><strong>Picture / diagram {slide.image_generated ? '· Image generated' : ''}</strong><span>{slide.picture_recommendation}</span>{slide.image_generation_error && <em>{slide.image_generation_error}</em>}</div>}
           {slide.source_pages && <small className="source-pages">Source PDF page(s): {slide.source_pages}</small>}
         </article>)}</div>
         <div className="feedback-panel"><label className="field">Your feedback<textarea value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="For example: Make slide 4 simpler, add a comparison slide, and use fewer bullets." /></label><button onClick={reviseDraft} disabled={Boolean(busy) || !feedback.trim()}>Revise draft</button><button className="export-button" onClick={exportPresentation} disabled={Boolean(busy)}>Approve and export PowerPoint</button></div>

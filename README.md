@@ -228,13 +228,16 @@ selection functions from Module 2, then drives a resumable LangGraph workflow:
 - `POST /slides/contents` extracts selectable teaching sections.
 - `POST /slides/calibrate` maps printed page numbers to PDF pages.
 - `POST /slides/generate` retrieves matching chunks and creates a structured draft
-  with slide copy, layout recommendations, visual recommendations, and sources.
+  with slide copy, layout recommendations, visual recommendations, and sources. Set
+  `generate_images: true` to generate cost-optimized GPT Image 2 visuals for the deck.
 - `POST /slides/{draft_id}/feedback` incorporates user feedback into the draft.
 - `POST /slides/{draft_id}/export` renders the approved draft with `python-pptx`.
 - `GET /slides/{presentation_id}/download` downloads the final `.pptx` file.
 
 Drafts and rendered presentations are held in backend memory and expire when the
 server restarts. `python-pptx` writes modern `.pptx` files, not legacy binary `.ppt` files.
+Image generation is opt-in and uses `gpt-image-2` with low quality, 1536×1024 landscape
+JPEG output, and compression to balance presentation quality, latency, cost, and file size.
 
 ## Notes
 

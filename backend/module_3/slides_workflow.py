@@ -30,6 +30,7 @@ class SlidesState(TypedDict, total=False):
     slide_count: int
     audience: str
     instructions: str
+    generate_images: bool
     feedback: str
     books: List[Dict[str, str]]
     book: Dict[str, str]

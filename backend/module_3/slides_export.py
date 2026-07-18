@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import io
 import uuid
 from typing import Any, Dict, Iterable
@@ -80,8 +81,23 @@ def _footer(slide: Any, number: int, pages: str) -> None:
 
 
 def _visual_panel(slide: Any, recommendation: str, left: float = 8.75,
-                  top: float = 1.65, width: float = 3.9, height: float = 4.65) -> None:
+                  top: float = 1.65, width: float = 3.9, height: float = 4.65,
+                  image_base64: str = "") -> None:
     _box(slide, left, top, width, height, SKY, True)
+    if image_base64:
+        slide.shapes.add_picture(
+            io.BytesIO(base64.b64decode(image_base64)),
+            Inches(left + 0.18),
+            Inches(top + 0.18),
+            width=Inches(width - 0.36),
+            height=Inches((width - 0.36) / 1.5),
+        )
+        image_height = (width - 0.36) / 1.5
+        _text(slide, "VISUAL DIRECTION", left + 0.25, top + image_height + 0.48,
+              width - 0.5, 0.3, 10, BLUE, True)
+        _text(slide, recommendation, left + 0.25, top + image_height + 0.82,
+              width - 0.5, height - image_height - 1.0, 11, NAVY)
+        return
     _box(slide, left + 0.25, top + 0.28, 0.5, 0.08, AMBER, True)
     _text(slide, "VISUAL DIRECTION", left + 0.25, top + 0.47, width - 0.5, 0.3, 11, BLUE, True)
     _text(slide, recommendation or "Use a simple concept diagram based on the key idea.",
@@ -95,13 +111,17 @@ def _render_slide(prs: Presentation, item: Dict[str, Any], number: int) -> None:
     subtitle = str(item.get("subtitle") or "")
     bullets = item.get("bullets") or []
     visual = str(item.get("picture_recommendation") or "")
+    generated_image = str(item.get("generated_image_base64") or "")
 
     if layout == "title" or number == 1:
         _background(slide, NAVY)
         _box(slide, 0.62, 1.1, 0.12, 4.9, AMBER, True)
-        _text(slide, title, 1.05, 1.25, 10.9, 2.1, 34, WHITE, True)
+        title_width = 7.1 if generated_image else 10.9
+        _text(slide, title, 1.05, 1.25, title_width, 2.1, 34, WHITE, True)
         if subtitle:
-            _text(slide, subtitle, 1.08, 3.45, 9.8, 1.15, 20, RGBColor(191, 219, 254))
+            _text(slide, subtitle, 1.08, 3.45, title_width, 1.15, 20, RGBColor(191, 219, 254))
+        if generated_image:
+            _visual_panel(slide, visual, 8.75, 1.25, 3.9, 4.75, generated_image)
         _text(slide, "AI SLIDES GENERATOR", 1.08, 5.72, 3.5, 0.35, 11, RGBColor(147, 197, 253), True)
         return
 
@@ -111,7 +131,10 @@ def _render_slide(prs: Presentation, item: Dict[str, Any], number: int) -> None:
     if subtitle:
         _text(slide, subtitle, 0.68, 1.3, 11.5, 0.45, 14, SLATE)
 
-    if layout == "section":
+    if generated_image:
+        _bullets(slide, bullets, 0.75, 1.85, 7.55, 4.85, 20)
+        _visual_panel(slide, visual, image_base64=generated_image)
+    elif layout == "section":
         _box(slide, 0.65, 2.0, 12.0, 3.9, NAVY, True)
         _text(slide, title, 1.25, 2.55, 10.8, 1.2, 30, WHITE, True, PP_ALIGN.CENTER)
         if bullets:
