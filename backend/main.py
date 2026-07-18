@@ -10,7 +10,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from backend.config import UPLOAD_DIR
 from backend.module_1.chat import clear_chat_history, run_chat_workflow
 from backend.module_1.ingest import ingest_pdf
-from backend.module_2.workflow import get_quiz_pdf, run_quiz_workflow
+from backend.module_2.quiz_export import get_quiz_pdf
+from backend.module_2.quiz_workflow import run_quiz_workflow
 
 app = FastAPI(title="PDF RAG API")
 
