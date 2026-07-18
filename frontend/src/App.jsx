@@ -32,6 +32,14 @@ function Landing({ onOpen }) {
             </span>
             <span className="assistant-card-arrow" aria-hidden="true">→</span>
           </button>
+          <button className="assistant-card slides-card" type="button" onClick={() => onOpen('slides')}>
+            <span className="assistant-card-icon" aria-hidden="true">P</span>
+            <span className="assistant-card-copy">
+              <strong>AI Slides Generator</strong>
+              <span>Turn selected book sections into a reviewed, downloadable presentation.</span>
+            </span>
+            <span className="assistant-card-arrow" aria-hidden="true">→</span>
+          </button>
         </div>
       </div>
     </main>
@@ -221,9 +229,148 @@ function QuizGenerator({ onBack }) {
   );
 }
 
+function SlidesGenerator({ onBack }) {
+  const [books, setBooks] = useState([]);
+  const [bookId, setBookId] = useState('');
+  const [analysis, setAnalysis] = useState(null);
+  const [calibration, setCalibration] = useState(null);
+  const [actualFirstPage, setActualFirstPage] = useState('');
+  const [selectedSections, setSelectedSections] = useState([]);
+  const [slideCount, setSlideCount] = useState(10);
+  const [audience, setAudience] = useState('Students');
+  const [instructions, setInstructions] = useState('');
+  const [draft, setDraft] = useState(null);
+  const [feedback, setFeedback] = useState('');
+  const [presentation, setPresentation] = useState(null);
+  const [busy, setBusy] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setBusy('Loading indexed books...');
+    axios.get(`${API}/slides/books`)
+      .then(res => setBooks(res.data.books || []))
+      .catch(err => setError(err.response?.data?.detail || err.message))
+      .finally(() => setBusy(''));
+  }, []);
+
+  function resetAfterBook(nextBookId) {
+    setBookId(nextBookId); setAnalysis(null); setCalibration(null); setDraft(null);
+    setPresentation(null); setSelectedSections([]); setActualFirstPage(''); setError('');
+  }
+
+  async function analyzeBook() {
+    if (!bookId) return setError('Select a book first.');
+    setBusy('Reading the table of contents with AI...'); setError('');
+    try {
+      const { data } = await axios.post(`${API}/slides/contents`, { book_id: bookId });
+      setAnalysis(data); setActualFirstPage(String(data.sections[0].start_page));
+      setCalibration(null); setDraft(null); setPresentation(null);
+    } catch (err) { setError(err.response?.data?.detail || err.message); }
+    finally { setBusy(''); }
+  }
+
+  async function calibratePages() {
+    if (!actualFirstPage || Number(actualFirstPage) < 1) return setError('Enter the actual PDF page of the first section.');
+    setBusy('Saving the page correction...'); setError('');
+    try {
+      const { data } = await axios.post(`${API}/slides/calibrate`, {
+        analysis_id: analysis.analysis_id, actual_first_page: Number(actualFirstPage),
+      });
+      setCalibration(data); setSelectedSections([]); setDraft(null); setPresentation(null);
+    } catch (err) { setError(err.response?.data?.detail || err.message); }
+    finally { setBusy(''); }
+  }
+
+  function toggleSection(id) {
+    setSelectedSections(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+  }
+
+  async function generateDraft() {
+    if (selectedSections.length === 0) return setError('Select at least one section.');
+    setBusy('Retrieving book content and designing your slide draft...'); setError('');
+    try {
+      const { data } = await axios.post(`${API}/slides/generate`, {
+        calibration_id: calibration.calibration_id,
+        selected_section_ids: selectedSections,
+        slide_count: Number(slideCount), audience, instructions,
+      });
+      setDraft(data); setFeedback(''); setPresentation(null);
+    } catch (err) { setError(err.response?.data?.detail || err.message); }
+    finally { setBusy(''); }
+  }
+
+  async function reviseDraft() {
+    if (!feedback.trim()) return setError('Describe what you want changed.');
+    setBusy('Incorporating your feedback...'); setError('');
+    try {
+      const { data } = await axios.post(`${API}/slides/${draft.draft_id}/feedback`, { feedback });
+      setDraft(data); setFeedback(''); setPresentation(null);
+    } catch (err) { setError(err.response?.data?.detail || err.message); }
+    finally { setBusy(''); }
+  }
+
+  async function exportPresentation() {
+    setBusy('Rendering the final PowerPoint...'); setError('');
+    try {
+      const { data } = await axios.post(`${API}/slides/${draft.draft_id}/export`);
+      setPresentation(data);
+    } catch (err) { setError(err.response?.data?.detail || err.message); }
+    finally { setBusy(''); }
+  }
+
+  return (
+    <div className="container slides-page">
+      <PageHeader title="AI Slides Generator" description="Create, review, revise, and export grounded slides from your books." onBack={onBack} />
+      {error && <div className="alert error" role="alert">{error}</div>}
+      {busy && <div className="alert progress" role="status"><span className="spinner" />{busy}</div>}
+
+      <section>
+        <div className="step-heading slides-step"><span>1</span><div><h2>Choose a book</h2><p>Select an indexed book and extract its teaching sections.</p></div></div>
+        {books.length === 0 && !busy ? <p className="muted">No indexed Markdown books were found.</p> : <div className="inline-form"><select value={bookId} onChange={e => resetAfterBook(e.target.value)}><option value="">Select an indexed book</option>{books.map(book => <option key={book.id} value={book.id}>{book.name}</option>)}</select><button onClick={analyzeBook} disabled={!bookId || Boolean(busy)}>Analyze contents</button></div>}
+      </section>
+
+      {analysis && <section>
+        <div className="step-heading slides-step"><span>2</span><div><h2>Confirm page numbering</h2><p>Match the first printed section page to its actual PDF page.</p></div></div>
+        <div className="table-wrap"><table><thead><tr><th>Section</th><th>Printed start</th><th>Printed end</th></tr></thead><tbody>{analysis.sections.map(section => <tr key={section.id}><td>{section.title}</td><td>{section.start_page}</td><td>{section.end_page}</td></tr>)}</tbody></table></div>
+        <label className="field compact">Actual PDF page for “{analysis.sections[0].title}”<input type="number" min="1" value={actualFirstPage} onChange={e => { setActualFirstPage(e.target.value); setCalibration(null); setDraft(null); }} /></label>
+        <button onClick={calibratePages} disabled={Boolean(busy)}>Confirm page correction</button>
+      </section>}
+
+      {calibration && <section>
+        <div className="step-heading slides-step"><span>3</span><div><h2>Select content and configure the deck</h2><p>Page correction: {calibration.delta >= 0 ? '+' : ''}{calibration.delta}. Choose the material the presentation should teach.</p></div></div>
+        <div className="section-picker">{calibration.sections.map(section => <label key={section.id} className={`section-option slide-option ${selectedSections.includes(section.id) ? 'selected' : ''}`}><input type="checkbox" checked={selectedSections.includes(section.id)} onChange={() => toggleSection(section.id)} /><span><strong>{section.title}</strong><small>PDF pages {section.actual_start_page}–{section.actual_end_page}</small></span></label>)}</div>
+        <div className="slides-settings">
+          <label className="field">Slides<input type="number" min="3" max="30" value={slideCount} onChange={e => setSlideCount(e.target.value)} /></label>
+          <label className="field">Audience<input type="text" value={audience} onChange={e => setAudience(e.target.value)} placeholder="For example: Grade 10 students" /></label>
+          <label className="field wide">Learning goal and instructions<textarea value={instructions} onChange={e => setInstructions(e.target.value)} placeholder="For example: Explain the core concepts with examples and finish with a recap." /></label>
+        </div>
+        <button onClick={generateDraft} disabled={Boolean(busy) || selectedSections.length === 0}>Generate slide draft</button>
+      </section>}
+
+      {draft && <section className="slides-result">
+        <div className="step-heading slides-step"><span>4</span><div><h2>Review the draft</h2><p>{draft.slides.length} slides · Revision {draft.revision} · Theme: {draft.theme_recommendation}</p></div></div>
+        <div className="slide-preview-grid">{draft.slides.map((slide, index) => <article className="slide-preview" key={`${draft.revision}-${index}`}>
+          <div className="slide-preview-top"><span>{index + 1}</span><small>{slide.layout_recommendation.replace('_', ' ')}</small></div>
+          <h3>{slide.title}</h3>{slide.subtitle && <p className="slide-subtitle">{slide.subtitle}</p>}
+          {slide.bullets?.length > 0 && <ul>{slide.bullets.map((bullet, itemIndex) => <li key={itemIndex}>{bullet}</li>)}</ul>}
+          {slide.picture_recommendation && <div className="visual-recommendation"><strong>Picture / diagram</strong><span>{slide.picture_recommendation}</span></div>}
+          {slide.source_pages && <small className="source-pages">Source PDF page(s): {slide.source_pages}</small>}
+        </article>)}</div>
+        <div className="feedback-panel"><label className="field">Your feedback<textarea value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="For example: Make slide 4 simpler, add a comparison slide, and use fewer bullets." /></label><button onClick={reviseDraft} disabled={Boolean(busy) || !feedback.trim()}>Revise draft</button><button className="export-button" onClick={exportPresentation} disabled={Boolean(busy)}>Approve and export PowerPoint</button></div>
+      </section>}
+
+      {presentation && <section>
+        <div className="step-heading success"><span>✓</span><div><h2>Your presentation is ready</h2><p>The approved draft was rendered as a widescreen PowerPoint file.</p></div></div>
+        <a className="button-link slides-download" href={`${API}${presentation.download}`}>Download {presentation.filename}</a>
+      </section>}
+    </div>
+  );
+}
+
 export default function App() {
   const [activeView, setActiveView] = useState('landing');
   if (activeView === 'landing') return <Landing onOpen={setActiveView} />;
   if (activeView === 'quiz') return <QuizGenerator onBack={() => setActiveView('landing')} />;
+  if (activeView === 'slides') return <SlidesGenerator onBack={() => setActiveView('landing')} />;
   return <StudentAssistant onBack={() => setActiveView('landing')} />;
 }

@@ -8,8 +8,9 @@ This project provides a Retrieval-Augmented Generation application and a separat
 4. Store chunk embeddings and metadata in persistent Chroma.
 5. Ask questions from the indexed PDF.
 6. Generate section-based short-question quizzes and downloadable question/answer PDFs.
-7. Run `ragas_evaluation.ipynb` separately with an Excel evaluation dataset.
-8. Generate RAG answers, retrieve top-k chunks, run RAGAS metrics, and export results to a static output path.
+7. Generate, review, revise, and export grounded section-based PowerPoint slide decks.
+8. Run `ragas_evaluation.ipynb` separately with an Excel evaluation dataset.
+9. Generate RAG answers, retrieve top-k chunks, run RAGAS metrics, and export results to a static output path.
 
 RAGAS metrics included:
 
@@ -217,6 +218,23 @@ The quiz UI drives a resumable LangGraph workflow through these endpoints:
 
 Generated quiz sessions and PDFs are held in backend memory and expire when the
 server restarts. The source Markdown and Chroma index remain persistent.
+
+### 4. AI Slides Generator
+
+The slides UI reuses the book, table-of-contents, page-calibration, and Chroma
+selection functions from Module 2, then drives a resumable LangGraph workflow:
+
+- `GET /slides/books` lists indexed books.
+- `POST /slides/contents` extracts selectable teaching sections.
+- `POST /slides/calibrate` maps printed page numbers to PDF pages.
+- `POST /slides/generate` retrieves matching chunks and creates a structured draft
+  with slide copy, layout recommendations, visual recommendations, and sources.
+- `POST /slides/{draft_id}/feedback` incorporates user feedback into the draft.
+- `POST /slides/{draft_id}/export` renders the approved draft with `python-pptx`.
+- `GET /slides/{presentation_id}/download` downloads the final `.pptx` file.
+
+Drafts and rendered presentations are held in backend memory and expire when the
+server restarts. `python-pptx` writes modern `.pptx` files, not legacy binary `.ppt` files.
 
 ## Notes
 

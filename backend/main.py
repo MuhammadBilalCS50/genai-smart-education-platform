@@ -12,6 +12,8 @@ from backend.module_1.chat import clear_chat_history, run_chat_workflow
 from backend.module_1.ingest import ingest_pdf
 from backend.module_2.quiz_export import get_quiz_pdf
 from backend.module_2.quiz_workflow import run_quiz_workflow
+from backend.module_3.slides_export import get_presentation
+from backend.module_3.slides_workflow import run_slides_workflow
 
 app = FastAPI(title="PDF RAG API")
 
@@ -44,6 +46,18 @@ class QuizGenerationRequest(BaseModel):
     selected_section_ids: List[str]
     difficulty: Literal["easy", "medium", "hard"] = "medium"
     instructions: str = ""
+
+
+class SlidesGenerationRequest(BaseModel):
+    calibration_id: str
+    selected_section_ids: List[str]
+    slide_count: int = 10
+    audience: str = "Students"
+    instructions: str = ""
+
+
+class SlidesFeedbackRequest(BaseModel):
+    feedback: str
 
 
 @app.get("/")
@@ -140,5 +154,75 @@ def quiz_pdf_endpoint(quiz_id: str, version: Literal["questions", "answers"] = "
     return StreamingResponse(
         BytesIO(content),
         media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/slides/books")
+def slides_books_endpoint():
+    return run_slides_workflow("list_books")
+
+
+@app.post("/slides/contents")
+def slides_contents_endpoint(payload: QuizBookRequest):
+    try:
+        return run_slides_workflow("parse_toc", book_id=payload.book_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Could not analyze the table of contents: {exc}") from exc
+
+
+@app.post("/slides/calibrate")
+def slides_calibration_endpoint(payload: QuizCalibrationRequest):
+    try:
+        return run_slides_workflow(
+            "calibrate",
+            analysis_id=payload.analysis_id,
+            actual_first_page=payload.actual_first_page,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/slides/generate")
+def slides_generation_endpoint(payload: SlidesGenerationRequest):
+    try:
+        return run_slides_workflow("generate", **payload.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Could not generate the slide draft: {exc}") from exc
+
+
+@app.post("/slides/{draft_id}/feedback")
+def slides_feedback_endpoint(draft_id: str, payload: SlidesFeedbackRequest):
+    try:
+        return run_slides_workflow("revise", draft_id=draft_id, feedback=payload.feedback)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Could not revise the slide draft: {exc}") from exc
+
+
+@app.post("/slides/{draft_id}/export")
+def slides_export_endpoint(draft_id: str):
+    try:
+        return run_slides_workflow("export", draft_id=draft_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Could not export the presentation: {exc}") from exc
+
+
+@app.get("/slides/{presentation_id}/download")
+def slides_download_endpoint(presentation_id: str):
+    try:
+        content, filename = get_presentation(presentation_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return StreamingResponse(
+        BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

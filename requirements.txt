@@ -14,6 +14,7 @@ langchain-chroma>=0.2.0
 langgraph>=0.2.60
 langsmith>=0.2.0
 reportlab>=4.2.5
+python-pptx>=1.0.2
 ragas>=0.2.10
 datasets>=3.2.0
 rank-bm25>=0.2.2
