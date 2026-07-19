@@ -9,8 +9,9 @@ This project provides a Retrieval-Augmented Generation application and a separat
 5. Ask questions from the indexed PDF.
 6. Generate section-based short-question quizzes and downloadable question/answer PDFs.
 7. Generate, review, revise, and export grounded section-based PowerPoint slide decks.
-8. Run `ragas_evaluation.ipynb` separately with an Excel evaluation dataset.
-9. Generate RAG answers, retrieve top-k chunks, run RAGAS metrics, and export results to a static output path.
+8. OCR handwritten solved papers, apply an AI-parsed mark scheme to short questions, review marks, and export a PDF report.
+9. Run `ragas_evaluation.ipynb` separately with an Excel evaluation dataset.
+10. Generate RAG answers, retrieve top-k chunks, run RAGAS metrics, and export results to a static output path.
 
 RAGAS metrics included:
 
@@ -241,6 +242,23 @@ JPEG output, and compression to balance presentation quality, latency, cost, and
 When enabled, export uses a matching 3:2 slide canvas and places one generated image
 edge-to-edge on each slide without adding slide text. Text-based exports retain the
 existing widescreen formatting when image generation is disabled.
+
+### 5. AI Paper Checker
+
+The paper-checker UI drives four resumable Module 4 phases:
+
+- `POST /paper-checker/paper` runs PaddleOCR over a scanned solved-paper PDF, uses
+  the LLM to associate typed questions with handwritten answers, and persists JSON.
+- `POST /paper-checker/mark-scheme` OCRs a mark-scheme PDF and uses the LLM to
+  extract each question label, maximum mark, rubric, acceptable answer, and note.
+- `POST /paper-checker/check` classifies all question text, returns marks and reasons
+  only for short questions that match a scheme entry, and creates a review draft.
+- `POST /paper-checker/{check_id}/submit` validates reviewer-edited marks, calculates
+  totals, and creates the final report.
+- `GET /paper-checker/{check_id}/report` downloads the submitted PDF marks report.
+
+OCR and checking artifacts are stored under `storage/results/paper_checker`. PaddleOCR
+downloads its recognition models on first use, so the first paper can take longer to process.
 
 ## Notes
 

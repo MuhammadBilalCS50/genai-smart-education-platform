@@ -40,6 +40,14 @@ function Landing({ onOpen }) {
             </span>
             <span className="assistant-card-arrow" aria-hidden="true">→</span>
           </button>
+          <button className="assistant-card checker-card" type="button" onClick={() => onOpen('paper-checker')}>
+            <span className="assistant-card-icon" aria-hidden="true">C</span>
+            <span className="assistant-card-copy">
+              <strong>AI Paper Checker</strong>
+              <span>Read handwritten answers, apply a mark scheme, review marks, and export a report.</span>
+            </span>
+            <span className="assistant-card-arrow" aria-hidden="true">→</span>
+          </button>
         </div>
       </div>
     </main>
@@ -379,10 +387,120 @@ function SlidesGenerator({ onBack }) {
   );
 }
 
+function PaperChecker({ onBack }) {
+  const [paperFile, setPaperFile] = useState(null);
+  const [schemeFile, setSchemeFile] = useState(null);
+  const [paper, setPaper] = useState(null);
+  const [scheme, setScheme] = useState(null);
+  const [check, setCheck] = useState(null);
+  const [reviewedMarks, setReviewedMarks] = useState({});
+  const [report, setReport] = useState(null);
+  const [busy, setBusy] = useState('');
+  const [error, setError] = useState('');
+
+  async function parseUpload(kind) {
+    const file = kind === 'paper' ? paperFile : schemeFile;
+    if (!file) return setError(`Select a ${kind === 'paper' ? 'student paper' : 'mark scheme'} PDF first.`);
+    setBusy(kind === 'paper'
+      ? 'Running PaddleOCR on the handwritten paper and identifying questions and answers...'
+      : 'Reading the mark scheme and extracting its rubrics with AI...');
+    setError(''); setCheck(null); setReport(null);
+    const form = new FormData(); form.append('file', file);
+    try {
+      const endpoint = kind === 'paper' ? 'paper' : 'mark-scheme';
+      const { data } = await axios.post(`${API}/paper-checker/${endpoint}`, form);
+      if (kind === 'paper') setPaper(data); else setScheme(data);
+    } catch (err) { setError(err.response?.data?.detail || err.message); }
+    finally { setBusy(''); }
+  }
+
+  async function checkPaper() {
+    if (!paper || !scheme) return setError('Parse both PDFs before checking the paper.');
+    setBusy('Classifying questions and marking short questions against the rubric...');
+    setError(''); setReport(null);
+    try {
+      const { data } = await axios.post(`${API}/paper-checker/check`, {
+        paper_id: paper.paper_id, mark_scheme_id: scheme.mark_scheme_id,
+      });
+      setCheck(data);
+      setReviewedMarks(Object.fromEntries(data.assessments.map(item => [item.question_number, item.awarded_marks])));
+    } catch (err) { setError(err.response?.data?.detail || err.message); }
+    finally { setBusy(''); }
+  }
+
+  function changeMark(item, value) {
+    setReviewedMarks(previous => ({
+      ...previous, [item.question_number]: value === '' ? '' : Number(value),
+    }));
+  }
+
+  async function submitMarks() {
+    const invalid = check.assessments.find(item => {
+      const value = reviewedMarks[item.question_number];
+      return value === '' || !Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > item.max_marks;
+    });
+    if (invalid) return setError(`Enter marks from 0 to ${invalid.max_marks} for question ${invalid.question_number}.`);
+    setBusy('Finalizing totals and creating the marks report...'); setError('');
+    try {
+      const { data } = await axios.post(`${API}/paper-checker/${check.check_id}/submit`, {
+        marks: check.assessments.map(item => ({
+          question_number: item.question_number,
+          awarded_marks: Number(reviewedMarks[item.question_number]),
+        })),
+      });
+      setReport(data);
+    } catch (err) { setError(err.response?.data?.detail || err.message); }
+    finally { setBusy(''); }
+  }
+
+  return (
+    <div className="container checker-page">
+      <PageHeader title="AI Paper Checker" description="OCR a solved paper, apply its mark scheme, review AI marks, and export the final report." onBack={onBack} />
+      {error && <div className="alert error" role="alert">{error}</div>}
+      {busy && <div className="alert progress" role="status"><span className="spinner" />{busy}</div>}
+
+      <section>
+        <div className="step-heading checker-step"><span>1</span><div><h2>Upload the solved paper</h2><p>Use a scanned PDF with typed questions and clear handwritten answers.</p></div></div>
+        <div className="upload-row"><input type="file" accept="application/pdf,.pdf" onChange={e => { setPaperFile(e.target.files[0] || null); setPaper(null); setCheck(null); setReport(null); }} /><button onClick={() => parseUpload('paper')} disabled={!paperFile || Boolean(busy)}>Extract paper</button></div>
+        {paper && <div className="parse-success"><strong>{paper.questions.length} questions extracted</strong><span>{paper.source_filename}</span></div>}
+      </section>
+
+      <section>
+        <div className="step-heading checker-step"><span>2</span><div><h2>Upload the mark scheme</h2><p>The scheme may contain expected points, rubrics, examiner notes, and per-question marks.</p></div></div>
+        <div className="upload-row"><input type="file" accept="application/pdf,.pdf" onChange={e => { setSchemeFile(e.target.files[0] || null); setScheme(null); setCheck(null); setReport(null); }} /><button onClick={() => parseUpload('scheme')} disabled={!schemeFile || Boolean(busy)}>Extract mark scheme</button></div>
+        {scheme && <div className="parse-success"><strong>{scheme.items.length} marking entries extracted</strong><span>{scheme.source_filename}</span></div>}
+      </section>
+
+      {paper && scheme && <section>
+        <div className="step-heading checker-step"><span>3</span><div><h2>Check short questions</h2><p>Other detected question types are classified internally and excluded from marking.</p></div></div>
+        <button className="checker-button" onClick={checkPaper} disabled={Boolean(busy)}>Classify and check paper</button>
+      </section>}
+
+      {check && !report && <section>
+        <div className="step-heading checker-step"><span>4</span><div><h2>Review the proposed marks</h2><p>Change any mark if needed, then submit once to calculate the final total.</p></div></div>
+        <div className="assessment-list">{check.assessments.map(item => <article className="assessment-card" key={item.question_number}>
+          <div className="assessment-heading"><strong>Question {item.question_number}</strong><label>Marks <input type="number" min="0" max={item.max_marks} step="0.5" value={reviewedMarks[item.question_number] ?? ''} onChange={e => changeMark(item, e.target.value)} /> / {item.max_marks}</label></div>
+          <p className="question-copy">{item.question_text}</p>
+          <div className="answer-copy"><strong>Student answer</strong><p>{item.answer_text || 'No answer recognized.'}</p></div>
+          <div className="mark-reason"><strong>AI marking reason</strong><p>{item.reason}</p></div>
+          <details><summary>View applied mark scheme</summary><p>{item.mark_scheme}</p></details>
+        </article>)}</div>
+        <button className="checker-button" onClick={submitMarks} disabled={Boolean(busy)}>Submit reviewed marks</button>
+      </section>}
+
+      {report && <section>
+        <div className="step-heading success"><span>✓</span><div><h2>Marks report ready</h2><p>Final score: {report.total_awarded} / {report.total_possible} ({report.percentage.toFixed(1)}%)</p></div></div>
+        <a className="button-link checker-download" href={`${API}${report.report}`}>Download PDF marks report</a>
+      </section>}
+    </div>
+  );
+}
+
 export default function App() {
   const [activeView, setActiveView] = useState('landing');
   if (activeView === 'landing') return <Landing onOpen={setActiveView} />;
   if (activeView === 'quiz') return <QuizGenerator onBack={() => setActiveView('landing')} />;
   if (activeView === 'slides') return <SlidesGenerator onBack={() => setActiveView('landing')} />;
+  if (activeView === 'paper-checker') return <PaperChecker onBack={() => setActiveView('landing')} />;
   return <StudentAssistant onBack={() => setActiveView('landing')} />;
 }

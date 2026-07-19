@@ -22,6 +22,10 @@ body { font-family: Arial, sans-serif; background: #f6f7fb; margin: 0; color: #1
 .slides-card { border-color: #ccfbf1; box-shadow: 0 14px 35px rgba(15, 118, 110, 0.12); }
 .slides-card:hover { border-color: #5eead4; box-shadow: 0 18px 42px rgba(15, 118, 110, 0.18); }
 .slides-card .assistant-card-arrow { color: #0f766e; }
+.checker-card .assistant-card-icon { background: #c2410c; }
+.checker-card { border-color: #ffedd5; box-shadow: 0 14px 35px rgba(194, 65, 12, 0.12); }
+.checker-card:hover { border-color: #fdba74; box-shadow: 0 18px 42px rgba(194, 65, 12, 0.18); }
+.checker-card .assistant-card-arrow { color: #c2410c; }
 .assistant-page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
 .assistant-page-header p { margin: 8px 0 0; }
 .back-button { flex: 0 0 auto; margin-right: 0; }
@@ -122,6 +126,24 @@ tbody tr:last-child td { border-bottom: 0; }
 .feedback-panel { margin-top: 20px; padding: 18px; border-radius: 10px; background: #f8fafc; }
 .export-button, .slides-download { background: #0f766e; }
 .export-button:hover, .slides-download:hover { background: #115e59; }
+.checker-step > span { background: #ffedd5; color: #c2410c; }
+.upload-row { display: flex; align-items: center; gap: 12px; }
+.upload-row input { flex: 1; min-width: 0; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 8px; background: #f8fafc; }
+.upload-row button { flex: 0 0 auto; margin: 0; }
+.parse-success { display: flex; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 11px 13px; border-radius: 8px; background: #f0fdf4; color: #166534; }
+.parse-success span { color: #64748b; font-size: 13px; }
+.checker-button, .checker-download { background: #c2410c; }
+.checker-button:hover, .checker-download:hover { background: #9a3412; }
+.assessment-list { display: grid; gap: 14px; margin-bottom: 18px; }
+.assessment-card { padding: 17px; border: 1px solid #fed7aa; border-left: 4px solid #c2410c; border-radius: 10px; background: #fffaf5; }
+.assessment-heading { display: flex; justify-content: space-between; align-items: center; gap: 18px; }
+.assessment-heading > strong { color: #9a3412; font-size: 18px; }
+.assessment-heading label { display: flex; align-items: center; gap: 7px; font-weight: 700; white-space: nowrap; }
+.assessment-heading input[type="number"] { width: 74px; margin: 0; }
+.question-copy { margin: 13px 0; font-weight: 700; line-height: 1.45; }
+.answer-copy, .mark-reason { margin-top: 10px; padding: 11px 13px; border-radius: 8px; background: white; }
+.mark-reason { background: #fff7ed; }
+.answer-copy p, .mark-reason p, .assessment-card details p { margin: 5px 0 0; line-height: 1.45; white-space: pre-wrap; }
 
 @media (max-width: 720px) {
   .landing-page { padding: 20px; }
@@ -135,10 +157,11 @@ tbody tr:last-child td { border-bottom: 0; }
   .bubble { max-width: 94%; }
   .composer-actions { justify-content: stretch; }
   .composer-actions button { flex: 1; margin-right: 0; }
-  .inline-form, .download-actions { align-items: stretch; flex-direction: column; }
+  .inline-form, .download-actions, .upload-row { align-items: stretch; flex-direction: column; }
   .inline-form select { min-width: 100%; }
   .section-picker, .quiz-settings, .slides-settings, .slide-preview-grid { grid-template-columns: 1fr; }
   .slides-settings .wide { grid-column: auto; }
+  .parse-success, .assessment-heading { align-items: flex-start; flex-direction: column; }
 }
 
 @media (max-width: 1000px) and (min-width: 721px) {
