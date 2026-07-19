@@ -402,7 +402,7 @@ function PaperChecker({ onBack }) {
     const file = kind === 'paper' ? paperFile : schemeFile;
     if (!file) return setError(`Select a ${kind === 'paper' ? 'student paper' : 'mark scheme'} PDF first.`);
     setBusy(kind === 'paper'
-      ? 'Running PaddleOCR on the handwritten paper and identifying questions and answers...'
+      ? 'Sending the paper to the vision model and identifying questions and handwritten answers...'
       : 'Reading the mark scheme and extracting its rubrics with AI...');
     setError(''); setCheck(null); setReport(null);
     const form = new FormData(); form.append('file', file);

@@ -247,9 +247,9 @@ existing widescreen formatting when image generation is disabled.
 
 The paper-checker UI drives four resumable Module 4 phases:
 
-- `POST /paper-checker/paper` runs PaddleOCR over a scanned solved-paper PDF, uses
-  the LLM to associate typed questions with handwritten answers, and persists JSON.
-- `POST /paper-checker/mark-scheme` OCRs a mark-scheme PDF and uses the LLM to
+- `POST /paper-checker/paper` sends the scanned solved-paper PDF directly to a
+  vision-capable LLM, associates typed questions with handwritten answers, and persists JSON.
+- `POST /paper-checker/mark-scheme` sends the mark-scheme PDF directly to the LLM to
   extract each question label, maximum mark, rubric, acceptable answer, and note.
 - `POST /paper-checker/check` classifies all question text, returns marks and reasons
   only for short questions that match a scheme entry, and creates a review draft.
@@ -257,8 +257,7 @@ The paper-checker UI drives four resumable Module 4 phases:
   totals, and creates the final report.
 - `GET /paper-checker/{check_id}/report` downloads the submitted PDF marks report.
 
-OCR and checking artifacts are stored under `storage/results/paper_checker`. PaddleOCR
-downloads its recognition models on first use, so the first paper can take longer to process.
+Parsing and checking artifacts are stored under `storage/results/paper_checker`.
 
 ## Notes
 
