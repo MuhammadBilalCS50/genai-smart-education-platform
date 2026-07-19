@@ -238,6 +238,9 @@ Drafts and rendered presentations are held in backend memory and expire when the
 server restarts. `python-pptx` writes modern `.pptx` files, not legacy binary `.ppt` files.
 Image generation is opt-in and uses `gpt-image-2` with low quality, 1536×1024 landscape
 JPEG output, and compression to balance presentation quality, latency, cost, and file size.
+When enabled, export uses a matching 3:2 slide canvas and places one generated image
+edge-to-edge on each slide without adding slide text. Text-based exports retain the
+existing widescreen formatting when image generation is disabled.
 
 ## Notes
 

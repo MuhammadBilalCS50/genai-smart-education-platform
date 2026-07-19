@@ -352,7 +352,7 @@ function SlidesGenerator({ onBack }) {
           <label className="field wide">Learning goal and instructions<textarea value={instructions} onChange={e => setInstructions(e.target.value)} placeholder="For example: Explain the core concepts with examples and finish with a recap." /></label>
           <label className="image-generation-option wide">
             <input type="checkbox" checked={generateImages} onChange={e => { setGenerateImages(e.target.checked); setDraft(null); setPresentation(null); }} />
-            <span><strong>Generate slide images with GPT Image 2</strong><small>Optional and billed separately. Uses low-quality landscape images to minimize cost; one image is generated for every slide.</small></span>
+            <span><strong>Generate image-based slides with GPT Image 2</strong><small>Optional and billed separately. Every slide will contain only a generated 3:2 image with no additional text. Uses the low-quality setting to minimize cost.</small></span>
           </label>
         </div>
         <button onClick={generateDraft} disabled={Boolean(busy) || selectedSections.length === 0}>Generate slide draft</button>
@@ -360,7 +360,7 @@ function SlidesGenerator({ onBack }) {
 
       {draft && <section className="slides-result">
         <div className="step-heading slides-step"><span>4</span><div><h2>Review the draft</h2><p>{draft.slides.length} slides · Revision {draft.revision}{draft.generate_images ? ` · ${draft.images_generated}/${draft.slides.length} images generated` : ''} · Theme: {draft.theme_recommendation}</p></div></div>
-        {draft.image_generation_failures > 0 && <div className="alert image-warning">{draft.image_generation_failures} image{draft.image_generation_failures === 1 ? '' : 's'} could not be generated. Those slides will use their visual recommendation panel instead.</div>}
+        {draft.image_generation_failures > 0 && <div className="alert image-warning">{draft.image_generation_failures} image{draft.image_generation_failures === 1 ? '' : 's'} could not be generated. Those slides will remain blank in the image-only export.</div>}
         <div className="slide-preview-grid">{draft.slides.map((slide, index) => <article className="slide-preview" key={`${draft.revision}-${index}`}>
           <div className="slide-preview-top"><span>{index + 1}</span><small>{slide.layout_recommendation.replace('_', ' ')}</small></div>
           <h3>{slide.title}</h3>{slide.subtitle && <p className="slide-subtitle">{slide.subtitle}</p>}
@@ -372,7 +372,7 @@ function SlidesGenerator({ onBack }) {
       </section>}
 
       {presentation && <section>
-        <div className="step-heading success"><span>✓</span><div><h2>Your presentation is ready</h2><p>The approved draft was rendered as a widescreen PowerPoint file.</p></div></div>
+        <div className="step-heading success"><span>✓</span><div><h2>Your presentation is ready</h2><p>{draft?.generate_images ? 'The approved draft was rendered as a 3:2 image-only PowerPoint file.' : 'The approved draft was rendered as a widescreen PowerPoint file.'}</p></div></div>
         <a className="button-link slides-download" href={`${API}${presentation.download}`}>Download {presentation.filename}</a>
       </section>}
     </div>

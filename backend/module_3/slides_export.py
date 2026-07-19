@@ -157,12 +157,33 @@ def _render_slide(prs: Presentation, item: Dict[str, Any], number: int) -> None:
     _footer(slide, number, str(item.get("source_pages") or ""))
 
 
+def _render_image_only_slide(prs: Presentation, item: Dict[str, Any]) -> None:
+    """Render a single edge-to-edge image without any text or decorative elements."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    image_base64 = str(item.get("generated_image_base64") or "")
+    if image_base64:
+        slide.shapes.add_picture(
+            io.BytesIO(base64.b64decode(image_base64)),
+            0,
+            0,
+            width=prs.slide_width,
+            height=prs.slide_height,
+        )
+
+
 def _presentation_bytes(state: Dict[str, Any]) -> bytes:
     prs = Presentation()
-    prs.slide_width = Inches(13.333)
-    prs.slide_height = Inches(7.5)
-    for index, slide_data in enumerate(state["deck"]["slides"], start=1):
-        _render_slide(prs, slide_data, index)
+    if state.get("generate_images", False):
+        # Match the generated 1536x1024 images exactly so they fill each slide without cropping.
+        prs.slide_width = Inches(13.5)
+        prs.slide_height = Inches(9)
+        for slide_data in state["deck"]["slides"]:
+            _render_image_only_slide(prs, slide_data)
+    else:
+        prs.slide_width = Inches(13.333)
+        prs.slide_height = Inches(7.5)
+        for index, slide_data in enumerate(state["deck"]["slides"], start=1):
+            _render_slide(prs, slide_data, index)
     output = io.BytesIO()
     prs.save(output)
     return output.getvalue()
