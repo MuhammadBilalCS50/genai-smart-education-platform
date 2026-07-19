@@ -9,7 +9,7 @@ from langchain_openai import ChatOpenAI
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
-from backend.config import OPENAI_API_KEY, OPENAI_CHAT_MODEL
+from backend.config import OPENAI_API_KEY, OPENAI_CHAT_MODEL_SLIDES, OPENAI_IMAGE_MODEL
 
 
 class SlideContent(BaseModel):
@@ -32,7 +32,6 @@ class SlideDeck(BaseModel):
 
 
 SLIDE_DRAFTS: Dict[str, Dict[str, Any]] = {}
-IMAGE_MODEL = "gpt-image-2"
 
 GENERATION_PROMPT = ChatPromptTemplate.from_messages([
     (
@@ -79,7 +78,7 @@ When image generation is requested, retain a concrete picture_recommendation on 
 
 
 def _llm(temperature: float = 0.2) -> ChatOpenAI:
-    return ChatOpenAI(model=OPENAI_CHAT_MODEL, temperature=temperature)
+    return ChatOpenAI(model=OPENAI_CHAT_MODEL_SLIDES, temperature=temperature)
 
 
 def _image_client() -> OpenAI:
@@ -119,7 +118,7 @@ def _generate_slide_images(deck: Dict[str, Any], previous_deck: Dict[str, Any] |
         try:
             client = client or _image_client()
             result = client.images.generate(
-                model=IMAGE_MODEL,
+                model=OPENAI_IMAGE_MODEL,
                 prompt=_image_prompt(slide),
                 size="1536x1024",
                 quality="low",

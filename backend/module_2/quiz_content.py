@@ -47,17 +47,45 @@ CALIBRATIONS: Dict[str, Dict[str, Any]] = {}
 TOC_PROMPT = ChatPromptTemplate.from_messages([
     (
         "system",
-        """Extract the book's table of contents into quiz-worthy sections.
+        """Extract only teachable topics located inside chapters from the book's table of contents.
 
-Use the page numbers printed in the table of contents, not PDF viewer page numbers.
-Treat each main numbered topic as a section (for example, rows 1, 2, 3),
-not a broad part that contains several chapters. For each section return its title,
-first printed page, and final printed page. Infer a section's final page as the page
-immediately before the next section starts. Exclude front matter, answer keys, indexes,
-acknowledgements, and other non-teaching matter. Return sections in book order. Do not
-invent a section when the contents are unclear.""",
+Hierarchy rules:
+- A topic must be a child entry beneath a chapter.
+- Return only topic-level entries such as 1.1, 1.2, 2.1, or clearly indented topic headings.
+- Never return parts, units, modules, chapter titles, appendices, or other parent headings.
+- Never treat a chapter as a topic.
+- If a chapter has no visible child topics in the table of contents, return nothing for that chapter.
+
+Examples:
+
+Part I: Foundations                  -> EXCLUDE
+Chapter 1: Introduction              -> EXCLUDE
+1.1 Meaning of Artificial Intelligence -> INCLUDE
+1.2 Types of Artificial Intelligence   -> INCLUDE
+Chapter 2: Machine Learning          -> EXCLUDE
+Supervised Learning                  -> INCLUDE only if it is visibly nested under Chapter 2
+Unsupervised Learning                -> INCLUDE only if it is visibly nested under Chapter 2
+
+Page rules:
+- Use printed page numbers shown in the table of contents, not PDF viewer page numbers.
+- Set each topic's start_page to its printed starting page.
+- Set end_page to one page before the next topic begins.
+- For the final topic in a chapter, end it one page before the next chapter begins.
+- For the final topic in the extracted contents, use the best supported ending page from the table of contents.
+- Never create invalid or overlapping page ranges.
+- Do not invent page numbers or topics.
+
+Exclude:
+- Parts, units, modules, and chapter headings
+- Prefaces and other front matter
+- Summaries, review questions, exercises, and answer keys unless explicitly requested
+- References, glossaries, indexes, acknowledgements, and appendices
+""",
     ),
-    ("human", "Markdown extracted from the book:\n\n{markdown}"),
+    (
+        "human",
+        "Extract topic-level entries from this book Markdown:\n\n{markdown}",
+    ),
 ])
 
 
