@@ -13,40 +13,24 @@ function Landing({ onOpen }) {
     <main className="landing-page">
       <div className="landing-content">
         <span className="landing-eyebrow">Smart Education Platform</span>
-        <h1>Choose your learning assistant</h1>
-        <p>Select a workspace to get started.</p>
-        <div className="assistant-grid">
-          <button className="assistant-card" type="button" onClick={() => onOpen('student-rag')}>
+        <h1>Choose your AI workspace</h1>
+        <p>Select the tools designed for your role.</p>
+        <div className="assistant-grid category-grid">
+          <button className="assistant-card category-card" type="button" onClick={() => onOpen('student-tools')}>
             <span className="assistant-card-icon" aria-hidden="true">S</span>
             <span className="assistant-card-copy">
-              <strong>Student RAG Assistant</strong>
-              <span>Upload study material and ask grounded questions about it.</span>
+              <strong>Student AI Tools</strong>
+              <span>Ask questions from study material and generate grounded quizzes.</span>
             </span>
-            <span className="assistant-card-arrow" aria-hidden="true">→</span>
+            <span className="assistant-card-arrow" aria-hidden="true">&rarr;</span>
           </button>
-          <button className="assistant-card quiz-card" type="button" onClick={() => onOpen('quiz')}>
-            <span className="assistant-card-icon" aria-hidden="true">Q</span>
+          <button className="assistant-card category-card instructor-card" type="button" onClick={() => onOpen('instructor-tools')}>
+            <span className="assistant-card-icon" aria-hidden="true">I</span>
             <span className="assistant-card-copy">
-              <strong>AI Quiz Generator</strong>
-              <span>Create section-based short-question papers with answers and sources.</span>
+              <strong>Instructor AI Tools</strong>
+              <span>Create teaching slides and check student papers with AI.</span>
             </span>
-            <span className="assistant-card-arrow" aria-hidden="true">→</span>
-          </button>
-          <button className="assistant-card slides-card" type="button" onClick={() => onOpen('slides')}>
-            <span className="assistant-card-icon" aria-hidden="true">P</span>
-            <span className="assistant-card-copy">
-              <strong>AI Slides Generator</strong>
-              <span>Turn selected book sections into a reviewed, downloadable presentation.</span>
-            </span>
-            <span className="assistant-card-arrow" aria-hidden="true">→</span>
-          </button>
-          <button className="assistant-card checker-card" type="button" onClick={() => onOpen('paper-checker')}>
-            <span className="assistant-card-icon" aria-hidden="true">C</span>
-            <span className="assistant-card-copy">
-              <strong>AI Paper Checker</strong>
-              <span>Read handwritten answers, apply a mark scheme, review marks, and export a report.</span>
-            </span>
-            <span className="assistant-card-arrow" aria-hidden="true">→</span>
+            <span className="assistant-card-arrow" aria-hidden="true">&rarr;</span>
           </button>
         </div>
       </div>
@@ -54,11 +38,67 @@ function Landing({ onOpen }) {
   );
 }
 
-function PageHeader({ title, description, onBack }) {
+function ToolLanding({ audience, onOpen, onBack }) {
+  const isStudent = audience === 'student';
+
+  return (
+    <main className="landing-page">
+      <div className="landing-content">
+        <div className="category-heading">
+          <div>
+            <span className="landing-eyebrow">Smart Education Platform</span>
+            <h1>{isStudent ? 'Student AI Tools' : 'Instructor AI Tools'}</h1>
+            <p>{isStudent ? 'Choose a learning tool to get started.' : 'Choose a teaching tool to get started.'}</p>
+          </div>
+          <button className="secondary category-back-button" type="button" onClick={onBack}>Back to home</button>
+        </div>
+        <div className="assistant-grid category-grid">
+          {isStudent ? <>
+            <button className="assistant-card" type="button" onClick={() => onOpen('student-rag')}>
+              <span className="assistant-card-icon" aria-hidden="true">S</span>
+              <span className="assistant-card-copy">
+                <strong>Student RAG Assistant</strong>
+                <span>Upload study material and ask grounded questions about it.</span>
+              </span>
+              <span className="assistant-card-arrow" aria-hidden="true">&rarr;</span>
+            </button>
+            <button className="assistant-card quiz-card" type="button" onClick={() => onOpen('quiz')}>
+              <span className="assistant-card-icon" aria-hidden="true">Q</span>
+              <span className="assistant-card-copy">
+                <strong>AI Quiz Generator</strong>
+                <span>Create section-based short-question papers with answers and sources.</span>
+              </span>
+              <span className="assistant-card-arrow" aria-hidden="true">&rarr;</span>
+            </button>
+          </> : <>
+            <button className="assistant-card slides-card" type="button" onClick={() => onOpen('slides')}>
+              <span className="assistant-card-icon" aria-hidden="true">P</span>
+              <span className="assistant-card-copy">
+                <strong>AI Slides Generator</strong>
+                <span>Turn selected book sections into a reviewed, downloadable presentation.</span>
+              </span>
+              <span className="assistant-card-arrow" aria-hidden="true">&rarr;</span>
+            </button>
+            <button className="assistant-card checker-card" type="button" onClick={() => onOpen('paper-checker')}>
+              <span className="assistant-card-icon" aria-hidden="true">C</span>
+              <span className="assistant-card-copy">
+                <strong>AI Paper Checker</strong>
+                <span>Read handwritten answers, apply a mark scheme, review marks, and export a report.</span>
+              </span>
+              <span className="assistant-card-arrow" aria-hidden="true">&rarr;</span>
+            </button>
+          </>}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function PageHeader({ title, description, onBack, backLabel = 'Back to tools' }) {
   return (
     <header className="assistant-page-header">
       <div><h1>{title}</h1><p>{description}</p></div>
-      <button className="secondary back-button" type="button" onClick={onBack}>Back to home</button>
+      <button className="secondary back-button" type="button" onClick={onBack}>{backLabel}</button>
     </header>
   );
 }
@@ -499,8 +539,11 @@ function PaperChecker({ onBack }) {
 export default function App() {
   const [activeView, setActiveView] = useState('landing');
   if (activeView === 'landing') return <Landing onOpen={setActiveView} />;
-  if (activeView === 'quiz') return <QuizGenerator onBack={() => setActiveView('landing')} />;
-  if (activeView === 'slides') return <SlidesGenerator onBack={() => setActiveView('landing')} />;
-  if (activeView === 'paper-checker') return <PaperChecker onBack={() => setActiveView('landing')} />;
-  return <StudentAssistant onBack={() => setActiveView('landing')} />;
+  if (activeView === 'student-tools') return <ToolLanding audience="student" onOpen={setActiveView} onBack={() => setActiveView('landing')} />;
+  if (activeView === 'instructor-tools') return <ToolLanding audience="instructor" onOpen={setActiveView} onBack={() => setActiveView('landing')} />;
+  if (activeView === 'student-rag') return <StudentAssistant onBack={() => setActiveView('student-tools')} />;
+  if (activeView === 'quiz') return <QuizGenerator onBack={() => setActiveView('student-tools')} />;
+  if (activeView === 'slides') return <SlidesGenerator onBack={() => setActiveView('instructor-tools')} />;
+  if (activeView === 'paper-checker') return <PaperChecker onBack={() => setActiveView('instructor-tools')} />;
+  return <Landing onOpen={setActiveView} />;
 }
