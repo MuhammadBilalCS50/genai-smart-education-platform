@@ -9,6 +9,14 @@ A local React and FastAPI application for working with educational PDFs. It prov
 
 The repository also includes a standalone notebook for evaluating the document assistant with RAGAS.
 
+## How I collaborated with Codex and GPT-5.6
+
+I used **Codex, powered by GPT-5.6, as an engineering collaborator** from architecture design through implementation. Codex helped me reason about how to divide the platform into focused modules, connect the FastAPI and React layers, structure resumable LangGraph workflows, and build the shared RAG foundation used by the student and instructor tools. It accelerated the work of turning those designs into code by helping write and refine Python and React components, API contracts, structured model outputs, retrieval flows, document exporters, and integration logic. It was also valuable for tracing behavior across the codebase, identifying mismatches between components, debugging implementation details, and keeping the documentation aligned with the final system.
+
+I remained responsible for the key product and engineering decisions: defining the four-tool education experience, separating student and instructor journeys, requiring document-grounded generation, introducing printed-to-PDF page calibration, limiting automated marking to supported short-answer questions, keeping a human reviewer in control of final marks, and making slide-image generation optional. I also decided how the workflows should balance quality, cost, persistence, safety, and usability.
+
+The final result came from an iterative human–AI development process: I set the goals, constraints, and acceptance criteria; reviewed and tested the behavior; and made the final design decisions. GPT-5.6 and Codex shortened the path from idea to working implementation by providing architecture feedback, producing and revising code, and helping validate how the complete system fit together.
+
 ## Important implementation constraints
 
 - PDF ingestion is explicitly configured for an **NVIDIA CUDA device**. There is no CPU fallback in the current code.
@@ -97,6 +105,9 @@ genai-smart-education-platform/
 │       ├── App.jsx               # All four user interfaces
 │       ├── main.jsx
 │       └── styles.css
+├── ragas_evals/
+│   ├── RAG_Evaluation_Dataset.xlsx # Evaluation questions and references
+│   └── ragas_metrics.xlsx          # Generated detailed and summary scores
 ├── ragas_evaluation.ipynb        # Standalone RAGAS evaluation
 ├── requirements.txt
 └── README.md
@@ -336,6 +347,8 @@ Omitted questions retain their AI-proposed marks. Submitted marks must be betwee
 
 RAGAS evaluation is not exposed through the API or frontend. It uses the existing Chroma collection and backend configuration directly.
 
+The `ragas_evals` folder contains the project's evaluation dataset (`RAG_Evaluation_Dataset.xlsx`) and an example generated results workbook (`ragas_metrics.xlsx`). The output workbook is overwritten when the notebook is run with the same output path.
+
 1. Ingest the PDF or PDFs to evaluate.
 2. Install and start Jupyter if it is not already available (Jupyter itself is not listed in `requirements.txt`):
 
@@ -347,8 +360,8 @@ RAGAS evaluation is not exposed through the API or frontend. It uses the existin
 3. Edit the first configuration cell:
 
    ```python
-   INPUT_DATASET_PATH = Path(r"D:\path\to\evaluation_dataset.xlsx")
-   OUTPUT_METRICS_PATH = Path(r"D:\path\to\ragas_metrics.xlsx")
+   INPUT_DATASET_PATH = Path("ragas_evals/RAG_Evaluation_Dataset.xlsx")
+   OUTPUT_METRICS_PATH = Path("ragas_evals/ragas_metrics.xlsx")
    TOP_K = 4
    ```
 
